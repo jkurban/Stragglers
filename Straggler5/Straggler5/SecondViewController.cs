@@ -7,6 +7,8 @@ using Microsoft.Bot.Connector.DirectLine;
 using Newtonsoft.Json;
 using UIKit;
 using CoreText;
+using System.Net;
+using Newtonsoft.Json.Linq;
 
 namespace Straggler5
 {
@@ -15,6 +17,11 @@ namespace Straggler5
         private static string directLineSecret = "4VUNz7rWeQs.cwA.OcA.KNOt5oohxiG5s3Wa32gBsR4hEUgKHT_WLcWeYmGQq-A";
         private static string botId = "urban-test-bot";
         private static string fromUser = "StragglerApp";
+
+        // for Q&A
+        private string knowledgebaseId = "620f6b60-d1f4-4f82-a38c-f7fc57055838"; // Use knowledge base id created.
+        private string qnamakerSubscriptionKey = "2d8abc61b06445c7b5e9d85be30ee848"; //Use subscription key assigned to you.
+
         DirectLineClient client;
         Conversation conversation;
 
@@ -38,14 +45,14 @@ namespace Straggler5
             askButton.TouchUpInside += AskButton_TouchUpInside;
             DirectLineClient client = new DirectLineClient(directLineSecret);
 
-            StartConversation();
+            // StartConversation();
 
             responseText.Text = "";
         }
 
         private void AskButton_TouchUpInside(object sender, EventArgs e)
         {
-            AskQuestion();
+            AskQuestion(askText.Text);
         }
 
         public override void ViewWillDisappear(bool animated)
@@ -62,11 +69,12 @@ namespace Straggler5
 
             new System.Threading.Thread(async () => await ReadBotMessagesAsync(client, conversation.ConversationId)).Start();
 
-            AskQuestion();
+            AskQuestion("hi");
         }
 
-        private async void AskQuestion()
+        private async void AskQuestion(string query)
         {
+            /* this code talks to a bot...
             Activity userMessage = new Activity
             {
                 From = new ChannelAccount(fromUser),
@@ -76,6 +84,34 @@ namespace Straggler5
 
             client.Conversations.PostActivity(conversation.ConversationId, userMessage);
             await ReadBotMessagesAsync(client, conversation.ConversationId);
+            */
+
+            // This code talks to Azure Q&A Cognitive Services
+            Uri qnamakerUriBase = new Uri("https://westus.api.cognitive.microsoft.com/qnamaker/v1.0");
+            var builder = new UriBuilder($"{qnamakerUriBase}/knowledgebases/{knowledgebaseId}/generateAnswer");
+
+            //Add the question as part of the body
+            var postBody = $"{{\"question\": \"{query}\"}}";
+
+            //Send the POST request
+            using (WebClient client = new WebClient())
+            {
+                //Set the encoding to UTF8
+                client.Encoding = System.Text.Encoding.UTF8;
+
+                //Add the subscription key header
+                client.Headers.Add("Ocp-Apim-Subscription-Key", qnamakerSubscriptionKey);
+                client.Headers.Add("Content-Type", "application/json");
+                var responseString = client.UploadString(builder.Uri, postBody);
+                Debug.WriteLine(responseString);
+
+                var jObject = JObject.Parse(responseString);
+                var answer = jObject["answer"];
+                var score = jObject["score"];
+                Debug.WriteLine(answer);
+                Debug.WriteLine(score);
+                responseText.Text = $"{answer} : score {score}";
+            }
         }
 
         private async Task ReadBotMessagesAsync(DirectLineClient client, string conversationId)
