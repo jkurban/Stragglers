@@ -16,9 +16,9 @@ namespace Straggler5
 {
     public partial class FirstViewController : UIViewController
     {
-        const string accountURL = @"https://pichelper.documents.azure.com:443/";
-        const string accountKey = @"pKlxnxoMWdiTwynNp3rg344C4z1mvqFDu8wTob1rbfZoezDPz5fFOeDHNXOIP5dAfBJU8gH8e6XI51Upg4151g==";
-        const string databaseId = @"KeyAttributes";
+        const string accountURL = @"https://williams-wofeedback-cosmosdb.documents.azure.com:443/";
+        const string accountKey = @"cXujGEkWROxVoo5qMOpU6BviQofYXE692iwOXWMz72KjvBTloi1QWAzfJuKwo5rJpFccu6WrR5orCBKe3VEOmA==";
+        const string databaseId = @"keyattributes";
         const string collectionId = @"keyattributes";
 
         private Uri collectionLink = UriFactory.CreateDocumentCollectionUri(databaseId, collectionId);
@@ -53,6 +53,12 @@ namespace Straggler5
             {
                 Debug.WriteLine(@"ERROR {0}", e.Message);
             }
+        }
+
+        public override void ViewWillAppear(bool animated)
+        {
+            base.ViewWillAppear(animated);
+            GetCosmosDataAsync();
         }
 
         public async void GetCosmosDataAsync()
